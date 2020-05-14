@@ -33,6 +33,7 @@ type Config struct {
 	CertUser   string
 	ServerCert string
 	ServerKey  string
+	CACert     string
 	Fullchain  string
 
 	ReloadCommand   string
@@ -176,6 +177,10 @@ func loadConfig(configPath string) (*Config, error) {
 		conf.ServerKey = path.Join(conf.Store, "server.key")
 	}
 
+	if conf.CACert == "" {
+		conf.CACert = path.Join(conf.Store, "ca.crt")
+	}
+
 	return &conf, nil
 }
 
@@ -202,7 +207,7 @@ func renew(client *Client, conf *Config) error {
 		return err
 	}
 
-	if err := client.DownloadFile("server.pem", conf.ServerCert, conf); err != nil {
+	if err := client.DownloadFile("server.crt", conf.ServerCert, conf); err != nil {
 		return err
 	}
 
@@ -210,7 +215,11 @@ func renew(client *Client, conf *Config) error {
 		return err
 	}
 
-	if err := client.DownloadFile("fullchain.pem", conf.Fullchain, conf); err != nil {
+	if err := client.DownloadFile("fullchain.crt", conf.Fullchain, conf); err != nil {
+		return err
+	}
+
+	if err := client.DownloadFile("ca.crt", conf.CACert, conf); err != nil {
 		return err
 	}
 
