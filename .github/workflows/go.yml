@@ -56,8 +56,11 @@ jobs:
         GOARC: amd64
       run: |
         mkdir ${GOOS}_${GOARCH}
+        find .
         go build -v -o ${GOOS}_${GOARCH}/certmgr .
+        find .
         tar -czvf certmgr-latest_${GOOS}_${GOARCH}.tar.gz -C ./${GOOS}_${GOARCH} certmgr
+        find .
     
     - uses: actions/upload-artifact@v2
       with:
