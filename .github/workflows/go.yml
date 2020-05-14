@@ -36,7 +36,31 @@ jobs:
     - name: Test
       run: go test -v .
     
+    - name: Package Linux
+      env:
+        GOOS: linux
+        GOARC: amd64
+      run: |
+        mkdir ${GOOS}_${GOARCH}
+        go build -v -o ${GOOS}_${GOARCH}/certmgr .
+        tar -czvf certmgr-latest_${GOOS}_${GOARCH}.tar.gz -C ./${GOOS}_${GOARCH} certmgr
+        
     - uses: actions/upload-artifact@v2
       with:
-        name: certmgr
-        path: go-certmgr
+        name: certmgr-latest_linux_amd64.tar.gz
+        path: certmgr-latest_linux_amd64.tar.gz
+    
+    - name: Package FreeBSD
+      env:
+        GOOS: freebsd
+        GOARC: amd64
+      run: |
+        mkdir ${GOOS}_${GOARCH}
+        go build -v -o ${GOOS}_${GOARCH}/certmgr .
+        tar -czvf certmgr-latest_${GOOS}_${GOARCH}.tar.gz -C ./${GOOS}_${GOARCH} certmgr
+    
+    - uses: actions/upload-artifact@v2
+      with:
+        name: certmgr-latest_freebsd_amd64.tar.gz
+        path: certmgr-latest_freebsd_amd64.tar.gz
+    
