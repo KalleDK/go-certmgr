@@ -56,6 +56,10 @@ func (c *Client) ReadFile(p string) ([]byte, error) {
 }
 
 func (c *Client) DownloadFile(source, dest string) error {
+	if verbose {
+		log.Printf("%s ==> %s\n", source, dest)
+	}
+
 	data, err := c.ReadFile(source)
 	if err != nil {
 		return err
@@ -82,6 +86,10 @@ func newSSHClient(conf *Config) (*ssh.Client, error) {
 			ssh.PublicKeys(signer),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+
+	if verbose {
+		log.Printf("sftp -i %s -P %d %s@%s\n", conf.PrivateKey, conf.Port, conf.User, conf.Hostname)
 	}
 
 	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", conf.Hostname, conf.Port), config)
@@ -167,7 +175,9 @@ func compareLastmodified(client *Client, conf *Config) (bool, error) {
 }
 
 func renew(client *Client, conf *Config) error {
-	fmt.Println("renewing")
+	if verbose {
+		log.Println("renewing")
+	}
 
 	if err := client.DownloadFile("lastmodified", conf.lastmodified()); err != nil {
 		return err
@@ -197,20 +207,23 @@ func renew(client *Client, conf *Config) error {
 	return nil
 }
 
+var verbose bool
+
 func main() {
 
 	usage := `Certmgr.
 
 Usage:
-  certmgr [--force] [--config=<config>]
+  certmgr [--verbose] [--force] [--config=<config>]
   certmgr -h | --help
   certmgr --version
 
 Options:
   -h --help                       Show this screen.
   --version                       Show version.
+  -v, --verbose					  Verbose
   -f, --force                     Force
-  -c <config>, --config=<config>  Path to config [default: /etc/certmgr/certmgr.conf].
+  -c <config>, --config=<config>  Path to config [default: /usr/local/etc/certmgr/certmgr.conf].
 `
 	arguments, _ := docopt.ParseDoc(usage)
 	confPath, err := arguments.String("--config")
@@ -219,6 +232,11 @@ Options:
 	}
 
 	force, err := arguments.Bool("--force")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	verbose, err = arguments.Bool("--verbose")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -239,7 +257,9 @@ Options:
 	}
 
 	if !shouldRenew && !force {
-		fmt.Print("nothing to do")
+		if verbose {
+			log.Println("nothing to do")
+		}
 		return
 	}
 
