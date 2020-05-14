@@ -66,7 +66,7 @@ func (c *Client) DownloadFile(source, dest string, conf *Config) error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(dest, data, 0644); err != nil {
+	if err := ioutil.WriteFile(dest, data, 0640); err != nil {
 		return err
 	}
 
