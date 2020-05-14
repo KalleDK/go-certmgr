@@ -220,7 +220,7 @@ func renew(client *Client, conf *Config) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("=======\n%s\n======", out)
+		fmt.Printf("=======\n%s\n======\n", out)
 	}
 
 	return nil
