@@ -18,8 +18,8 @@ import (
 
 const (
 	DefaultPort       = 22
-	DefaultConfigPath = "/etc/certmgr/certmgr.conf"
-	DefaultPrivateKey = "/etc/certmgr/id_rsa"
+	DefaultConfigPath = "/usr/local/etc/certmgr/certmgr.conf"
+	DefaultPrivateKey = "/usr/local/etc/certmgr/id_rsa"
 	DefaultStore      = "/var/certmgr"
 )
 
