@@ -30,6 +30,7 @@ type Config struct {
 	Port       int
 	PrivateKey string
 
+	CertUser   string
 	ServerCert string
 	ServerKey  string
 	Fullchain  string
@@ -55,7 +56,7 @@ func (c *Client) ReadFile(p string) ([]byte, error) {
 	return ioutil.ReadAll(remoteFile)
 }
 
-func (c *Client) DownloadFile(source, dest string) error {
+func (c *Client) DownloadFile(source, dest string, conf *Config) error {
 	if verbose {
 		log.Printf("%s ==> %s\n", source, dest)
 	}
@@ -65,7 +66,25 @@ func (c *Client) DownloadFile(source, dest string) error {
 		return err
 	}
 
-	return ioutil.WriteFile(dest, data, 0644)
+	if err := ioutil.WriteFile(dest, data, 0644); err != nil {
+		return err
+	}
+
+	if conf != nil {
+		uid, err := conf.UID()
+		if err != nil {
+			return err
+		}
+		gid, err := conf.GID()
+		if err != nil {
+			return err
+		}
+		if err := Chown(dest, uid, gid); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func newSSHClient(conf *Config) (*ssh.Client, error) {
@@ -179,19 +198,19 @@ func renew(client *Client, conf *Config) error {
 		log.Println("renewing")
 	}
 
-	if err := client.DownloadFile("lastmodified", conf.lastmodified()); err != nil {
+	if err := client.DownloadFile("lastmodified", conf.lastmodified(), nil); err != nil {
 		return err
 	}
 
-	if err := client.DownloadFile("server.pem", conf.ServerCert); err != nil {
+	if err := client.DownloadFile("server.pem", conf.ServerCert, conf); err != nil {
 		return err
 	}
 
-	if err := client.DownloadFile("server.key", conf.ServerKey); err != nil {
+	if err := client.DownloadFile("server.key", conf.ServerKey, conf); err != nil {
 		return err
 	}
 
-	if err := client.DownloadFile("fullchain.pem", conf.Fullchain); err != nil {
+	if err := client.DownloadFile("fullchain.pem", conf.Fullchain, conf); err != nil {
 		return err
 	}
 
