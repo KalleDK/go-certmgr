@@ -39,4 +39,4 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: certmgr
-        path: main
+        path: go-certmgr
