@@ -22,7 +22,7 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: false
-  build_mgr:
+  build:
     name: Build Manager
     needs: create_release
     runs-on: ubuntu-latest
