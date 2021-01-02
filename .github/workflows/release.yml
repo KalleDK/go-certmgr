@@ -49,18 +49,18 @@ jobs:
       id: pack
       run: |
         BINARY_NAME=certmgr
-        BINARY_EXT=$(if [ "${GOOS}" = "windows" ]; then echo ".exe"; else echo ""; fi)
+        BINARY_EXT=$(if [ "${{ matrix.goos }}" = "windows" ]; then echo ".exe"; else echo ""; fi)
         BINARY=main
         TAG=$(basename ${GITHUB_REF})
-        ASSET_NAME=${BINARY_NAME}-${TAG}-${GOOS}-${GOARCH}
-        ASSET_EXT=$(if [ "${GOOS}" = "windows" ]; then echo ".zip"; else echo ".tar.gz"; fi)
-        ASSET_TYPE=$(if [ "${GOOS}" = "windows" ]; then echo "application/zip"; else echo "application/gzip"; fi)
+        ASSET_NAME=${BINARY_NAME}-${TAG}-${{ matrix.goos }}-${{ matrix.goarch }}
+        ASSET_EXT=$(if [ "${{ matrix.goos }}" = "windows" ]; then echo ".zip"; else echo ".tar.gz"; fi)
+        ASSET_TYPE=$(if [ "${{ matrix.goos }}" = "windows" ]; then echo "application/zip"; else echo "application/gzip"; fi)
         ASSET=${ASSET_NAME}${ASSET_EXT}
         BUILD_ARTIFACTS_FOLDER=build-artifacts-$(date +%s)
         mkdir -p ${BUILD_ARTIFACTS_FOLDER}
         cp ${BINARY} ${BUILD_ARTIFACTS_FOLDER}/
         cd ${BUILD_ARTIFACTS_FOLDER}
-        if [ "${GOOS}" = "windows" ]; then zip -9r ${ASSET} *; else tar cvfz ${ASSET} *; fi
+        if [ "${{ matrix.goos }}" = "windows" ]; then zip -9r ${ASSET} *; else tar cvfz ${ASSET} *; fi
         sha256sum ${ASSET} | cut -d ' ' -f 1 > ${ASSET}.sha256
         md5sum ${ASSET} | cut -d ' ' -f 1 > ${ASSET}.md5
         ASSET_PATH=${BUILD_ARTIFACTS_FOLDER}/${ASSET}
