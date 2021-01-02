@@ -1,10 +1,9 @@
 module github.com/KalleDK/go-certmgr
 
-go 1.13
+go 1.15
 
 require (
-	github.com/BurntSushi/toml v0.3.1
-	github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815
-	github.com/pkg/sftp v1.11.0
-	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
+	github.com/KalleDK/go-certapi v0.0.16
+	github.com/gin-gonic/gin v1.6.3
+	github.com/google/uuid v1.1.3
 )

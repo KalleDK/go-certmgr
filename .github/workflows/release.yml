@@ -1,0 +1,105 @@
+on:
+  push:
+    tags:
+    - 'v*'
+
+name: Make Relase
+
+jobs:
+  create_release:
+    name: Create Relase
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+  build_mgr:
+    name: Build Manager
+    needs: create_release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, "386"]
+        exclude:
+          - goos: darwin
+            goarch: "386"
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v2
+    - name: Build
+      id: build
+      uses: docker://golang:alpine
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 0
+      with:
+        args: go build ./certmgr
+    - name: Pack artifacts
+      id: pack
+      run: |
+        BINARY_NAME=certmgr
+        BINARY_EXT=$(if [ "${GOOS}" = "windows" ]; then echo ".exe"; else echo ""; fi)
+        BINARY=${BINARY_NAME}${BINARY_EXT}
+        TAG=$(basename ${GITHUB_REF})
+        ASSET_NAME=${BINARY_NAME}-${TAG}-${GOOS}-${GOARCH}
+        ASSET_EXT=$(if [ "${GOOS}" = "windows" ]; then echo ".zip"; else echo ".tar.gz"; fi)
+        ASSET_TYPE=$(if [ "${GOOS}" = "windows" ]; then echo "application/zip"; else echo "application/gzip"; fi)
+        ASSET=${ASSET_NAME}${ASSET_EXT}
+        BUILD_ARTIFACTS_FOLDER=build-artifacts-$(date +%s)
+        mkdir -p ${BUILD_ARTIFACTS_FOLDER}
+        cp ${BINARY} ${BUILD_ARTIFACTS_FOLDER}/
+        cd ${BUILD_ARTIFACTS_FOLDER}
+        if [ "${GOOS}" = "windows" ]; then zip -9r ${ASSET} *; else tar cvfz ${ASSET} *; fi
+        sha256sum ${ASSET} | cut -d ' ' -f 1 > ${ASSET}.sha256
+        md5sum ${ASSET} | cut -d ' ' -f 1 > ${ASSET}.md5
+        ASSET_PATH=${BUILD_ARTIFACTS_FOLDER}/${ASSET}
+        echo "::set-output name=asset::${ASSET}"
+        echo "::set-output name=asset_name::${ASSET_NAME}"
+        echo "::set-output name=asset_path::${ASSET_PATH}"
+        echo "::set-output name=asset_type::${ASSET_TYPE}"
+    - name: Upload Assets
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ steps.pack.outputs.asset_name }}
+        path: |
+          ${{ steps.pack.outputs.asset_path }}
+          ${{ steps.pack.outputs.asset_path }}.sha256
+          ${{ steps.pack.outputs.asset_path }}.md5
+    - name: Uploade Release File
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_name: ${{ steps.pack.outputs.asset }}
+        asset_path: ${{ steps.pack.outputs.asset_path }}
+        asset_content_type: ${{ steps.pack.outputs.asset_type }}
+    - name: Uploade Release File SHA256
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_name: ${{ steps.pack.outputs.asset }}.sha256
+        asset_path: ${{ steps.pack.outputs.asset_path }}.sha256
+        asset_content_type: text/plain
+    - name: Uploade Release File MD5
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_name: ${{ steps.pack.outputs.asset }}.md5
+        asset_path: ${{ steps.pack.outputs.asset_path }}.md5
+        asset_content_type: text/plain
