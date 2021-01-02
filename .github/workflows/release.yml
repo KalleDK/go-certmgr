@@ -44,13 +44,13 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
         CGO_ENABLED: 0
       with:
-        args: go build ./certmgr
+        args: go build -o main ./certmgr
     - name: Pack artifacts
       id: pack
       run: |
         BINARY_NAME=certmgr
         BINARY_EXT=$(if [ "${GOOS}" = "windows" ]; then echo ".exe"; else echo ""; fi)
-        BINARY=${BINARY_NAME}${BINARY_EXT}
+        BINARY=main
         TAG=$(basename ${GITHUB_REF})
         ASSET_NAME=${BINARY_NAME}-${TAG}-${GOOS}-${GOARCH}
         ASSET_EXT=$(if [ "${GOOS}" = "windows" ]; then echo ".zip"; else echo ".tar.gz"; fi)
