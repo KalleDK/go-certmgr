@@ -13,3 +13,6 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+certmgr/settings.conf
+certmgr/certs
+certmgr/certmgr.json
