@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"reflect"
@@ -13,7 +15,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func StringToUUIDHookFunc() mapstructure.DecodeHookFunc {
+func stringToUUIDHookFunc() mapstructure.DecodeHookFunc {
 	return func(
 		f reflect.Type,
 		t reflect.Type,
@@ -34,7 +36,7 @@ func StringToUUIDHookFunc() mapstructure.DecodeHookFunc {
 	}
 }
 
-func StringToKeyHookFunc() mapstructure.DecodeHookFunc {
+func stringToKeyHookFunc() mapstructure.DecodeHookFunc {
 	return func(
 		f reflect.Type,
 		t reflect.Type,
@@ -57,7 +59,14 @@ func StringToKeyHookFunc() mapstructure.DecodeHookFunc {
 }
 
 func loadSettings(setting *certmgr.Settings) error {
-	err := viper.Unmarshal(setting, viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(StringToUUIDHookFunc(), StringToKeyHookFunc())))
+	err := viper.Unmarshal(setting,
+		viper.DecodeHook(
+			mapstructure.ComposeDecodeHookFunc(
+				stringToUUIDHookFunc(),
+				stringToKeyHookFunc(),
+			),
+		),
+	)
 	if err != nil {
 		return err
 	}
@@ -86,7 +95,16 @@ to quickly create a Cobra application.`,
 		if err := loadSettings(&settings); err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("%#+v\n", settings)
+		b := &bytes.Buffer{}
+		dec := json.NewEncoder(b)
+		dec.SetIndent("", "  ")
+
+		if err := dec.Encode(settings); err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Print(b.String())
+
 	},
 }
 

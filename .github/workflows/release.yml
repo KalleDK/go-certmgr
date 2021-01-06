@@ -48,9 +48,10 @@ jobs:
     - name: Pack artifacts
       id: pack
       run: |
+        TMPNAME=main
         BINARY_NAME=certmgr
         BINARY_EXT=$(if [ "${{ matrix.goos }}" = "windows" ]; then echo ".exe"; else echo ""; fi)
-        BINARY=main
+        BINARY=${BINARY_NAME}${BINARY_EXT}
         TAG=$(basename ${GITHUB_REF})
         ASSET_NAME=${BINARY_NAME}-${TAG}-${{ matrix.goos }}-${{ matrix.goarch }}
         ASSET_EXT=$(if [ "${{ matrix.goos }}" = "windows" ]; then echo ".zip"; else echo ".tar.gz"; fi)
@@ -58,7 +59,7 @@ jobs:
         ASSET=${ASSET_NAME}${ASSET_EXT}
         BUILD_ARTIFACTS_FOLDER=build-artifacts-$(date +%s)
         mkdir -p ${BUILD_ARTIFACTS_FOLDER}
-        cp ${BINARY} ${BUILD_ARTIFACTS_FOLDER}/
+        cp ${TMPNAME} ${BUILD_ARTIFACTS_FOLDER}/${BINARY}
         cd ${BUILD_ARTIFACTS_FOLDER}
         if [ "${{ matrix.goos }}" = "windows" ]; then zip -9r ${ASSET} *; else tar cvfz ${ASSET} *; fi
         sha256sum ${ASSET} | cut -d ' ' -f 1 > ${ASSET}.sha256
