@@ -26,6 +26,10 @@ func stringToUUIDHookFunc() mapstructure.DecodeHookFunc {
 		if t != reflect.TypeOf(uuid.UUID{}) {
 			return data, nil
 		}
+		if len(data.(string)) == 0 {
+			return uuid.UUID{}, nil
+		}
+
 		uid, err := uuid.Parse(data.(string))
 
 		if err != nil {
@@ -46,6 +50,9 @@ func stringToKeyHookFunc() mapstructure.DecodeHookFunc {
 		}
 		if t != reflect.TypeOf(certapi.APIKey{}) {
 			return data, nil
+		}
+		if len(data.(string)) == 0 {
+			return certapi.APIKey{}, nil
 		}
 		var key certapi.APIKey
 		err := key.UnmarshalText([]byte(data.(string)))
@@ -110,14 +117,4 @@ to quickly create a Cobra application.`,
 
 func init() {
 	rootCmd.AddCommand(debugCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// debugCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// debugCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

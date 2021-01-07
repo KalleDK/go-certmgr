@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 
 	"github.com/spf13/viper"
@@ -43,18 +44,18 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "certmgr.json", "config file")
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file  (default is $HOME/.certmgr.yaml)")
 
 	rootCmd.PersistentFlags().String("id", "", "UUID for server")
 	viper.BindPFlag("id", rootCmd.PersistentFlags().Lookup("id"))
 
-	rootCmd.PersistentFlags().String("certhome", "", "Cert home")
+	rootCmd.PersistentFlags().StringP("certhome", "d", "", "Cert home")
 	viper.BindPFlag("certhome", rootCmd.PersistentFlags().Lookup("certhome"))
 
-	rootCmd.PersistentFlags().String("apikey", "", "API Key")
+	rootCmd.PersistentFlags().StringP("apikey", "k", "", "API Key")
 	viper.BindPFlag("apikey", rootCmd.PersistentFlags().Lookup("apikey"))
 
-	rootCmd.PersistentFlags().StringP("port", "p", "", "Server Port")
+	rootCmd.PersistentFlags().UintP("port", "p", 0, "Server Port")
 	viper.BindPFlag("serverport", rootCmd.PersistentFlags().Lookup("port"))
 
 	rootCmd.PersistentFlags().String("cert", "", "Server Cert")
@@ -68,12 +69,25 @@ func init() {
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	if cfgFile != "" {
+		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
+	} else {
+		// Find home directory.
+		home, err := homedir.Dir()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		// Search config in home directory with name ".flaf" (without extension).
+		viper.AddConfigPath(home)
+		viper.SetConfigName(".certmgr")
 	}
 
 	viper.SetEnvPrefix("certmgr")
 	viper.AutomaticEnv() // read in environment variables that match
 
+	fmt.Println(viper.ConfigFileUsed())
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
