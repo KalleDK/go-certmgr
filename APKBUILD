@@ -1,7 +1,7 @@
 # Contributor: Kalle M. Aagaard <alpine@k-moeller.dk>
 # Maintainer: Kalle M. Aagaard <alpine@k-moeller.dk>
 pkgname=certmgr
-pkgver=0.0.7
+pkgver=0.0.8
 pkgrel=1
 pkgdesc="A small certmgr service"
 url="https://github.com/KalleDK/go-${pkgname}/"
@@ -10,6 +10,7 @@ license="MIT"
 source="${pkgname}-${pkgver}.tar.gz::https://github.com/KalleDK/go-${pkgname}/archive/v${pkgver}.tar.gz"
 builddir="${srcdir}/go-${pkgname}-${pkgver}"
 makedepends="go"
+subpackages="$pkgname-openrc"
 
 check() {
     true
