@@ -22,6 +22,53 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: false
+  alpine:
+    name: Build APK
+    needs: create_release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v2
+    - name: Build
+      uses: ./.github/actions/alpine
+      with:
+        abuild_key: ${{ secrets.ABUILD_KEY }}
+        abuild_key_pub: ${{ secrets.ABUILD_KEY_PUB }}
+        abuild_key_name: alpine@k-moeller.dk-5ff315f1
+    - name: Find APK
+      id: pack
+      run: |
+        ASSET_NAME=$(find ${{ github.workspace }}/packages | grep apk | grep -v openrc | sed 's#.*/##')
+        ASSET_PATH=$(find ${{ github.workspace }}/packages | grep apk | grep -v openrc)        
+        ASSET_RC_NAME=$(find ${{ github.workspace }}/packages | grep apk | grep openrc | sed 's#.*/##')
+        ASSET_RC_PATH=$(find ${{ github.workspace }}/packages | grep apk | grep openrc)
+        echo "::set-output name=asset_name::${ASSET_NAME}"
+        echo "::set-output name=asset_path::${ASSET_PATH}"
+        echo "::set-output name=asset_rc_name::${ASSET_RC_NAME}"
+        echo "::set-output name=asset_rc_path::${ASSET_RC_PATH}"
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: certmgr_apk
+        path: ${{ github.workspace }}/packages
+    - name: Uploade Release File
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_name: ${{ steps.pack.outputs.asset_name }}
+        asset_path: ${{ steps.pack.outputs.asset_path }}
+        asset_content_type: "application/octet-stream"
+    - name: Uploade Release RC File
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        asset_name: ${{ steps.pack.outputs.asset_rc_name }}
+        asset_path: ${{ steps.pack.outputs.asset_rc_path }}
+        asset_content_type: "application/octet-stream"
   build:
     name: Build Manager
     needs: create_release
