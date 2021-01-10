@@ -1,91 +1,11 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"log"
-	"reflect"
 
-	"github.com/KalleDK/go-certapi/certapi"
 	"github.com/KalleDK/go-certmgr/certmgr/certmgr"
-	"github.com/google/uuid"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
-
-func stringToUUIDHookFunc() mapstructure.DecodeHookFunc {
-	return func(
-		f reflect.Type,
-		t reflect.Type,
-		data interface{}) (interface{}, error) {
-		if f.Kind() != reflect.String {
-			return data, nil
-		}
-		if t != reflect.TypeOf(uuid.UUID{}) {
-			return data, nil
-		}
-		if len(data.(string)) == 0 {
-			return uuid.UUID{}, nil
-		}
-
-		uid, err := uuid.Parse(data.(string))
-
-		if err != nil {
-			return uuid.UUID{}, fmt.Errorf("failed parsing uuid %w", err)
-		}
-
-		return uid, nil
-	}
-}
-
-func stringToKeyHookFunc() mapstructure.DecodeHookFunc {
-	return func(
-		f reflect.Type,
-		t reflect.Type,
-		data interface{}) (interface{}, error) {
-		if f.Kind() != reflect.String {
-			return data, nil
-		}
-		if t != reflect.TypeOf(certapi.APIKey{}) {
-			return data, nil
-		}
-		if len(data.(string)) == 0 {
-			return certapi.APIKey{}, nil
-		}
-		var key certapi.APIKey
-		err := key.UnmarshalText([]byte(data.(string)))
-
-		if err != nil {
-			return certapi.APIKey{}, fmt.Errorf("failed parsing uuid %w", err)
-		}
-
-		return key, nil
-	}
-}
-
-func loadSettings(setting *certmgr.Settings) error {
-	err := viper.Unmarshal(setting,
-		viper.DecodeHook(
-			mapstructure.ComposeDecodeHookFunc(
-				stringToUUIDHookFunc(),
-				stringToKeyHookFunc(),
-			),
-		),
-	)
-	if err != nil {
-		return err
-	}
-	if setting.ServerPort == 0 {
-		if setting.ServerCert != "" {
-			setting.ServerPort = 443
-		} else {
-			setting.ServerPort = 80
-		}
-	}
-	return nil
-}
 
 // debugCmd represents the debug command
 var debugCmd = &cobra.Command{
@@ -98,19 +18,10 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		var settings certmgr.Settings
-		if err := loadSettings(&settings); err != nil {
-			log.Fatal(err)
-		}
-		b := &bytes.Buffer{}
-		dec := json.NewEncoder(b)
-		dec.SetIndent("", "  ")
-
-		if err := dec.Encode(settings); err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Print(b.String())
+		var seti certmgr.Settings
+		err := sf.Unmarshal(&seti)
+		fmt.Println(err)
+		fmt.Printf("%+v\n", seti)
 
 	},
 }

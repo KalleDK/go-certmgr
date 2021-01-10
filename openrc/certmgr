@@ -1,36 +1,12 @@
 #!/sbin/openrc-run
 
+name="$SVCNAME"
+supervisor="supervise-daemon"
+command="/usr/local/bin/$SVCNAME"
+
+
 depend() {
-        need net
+        need net localmount
         use logger
-        after sshd firewall
-}
-
-checkconfd() {
-        PIDFILE="${PIDFILE:-/run/certmgr.pid}"
-        CERTMGR="${CERTMGR:-/usr/local/bin/certmgr}"
-        return 0
-
-}
-
-start() {
-    checkconfd || return 1
-
-    ebegin "Starting ${SVCNAME}"
-    start-stop-daemon --start \
-            --make-pidfile \
-            --pidfile ${PIDFILE} \
-            --exec ${CERTMGR} \
-            --background
-    eend $?
-}
-
-stop() {
-    checkconfd || return 1
-
-    ebegin "Stopping ${SVCNAME}"
-    start-stop-daemon --stop \
-            --pidfile ${PIDFILE} \
-            --exec ${CERTMGR}
-    eend $?
+        after firewall
 }

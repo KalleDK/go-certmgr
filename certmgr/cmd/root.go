@@ -3,18 +3,30 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 
-	"github.com/mitchellh/go-homedir"
+	"github.com/KalleDK/go-certmgr/certmgr/certmgr"
+	"github.com/adrg/xdg"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
-
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
+const binaryName = "certmgr"
+
 var cfgFile string
+
+var (
+	defaultConfigDir = filepath.Join(xdg.ConfigHome, binaryName)
+	defaultVarDir    = filepath.Join(xdg.StateHome, binaryName)
+	defaultConfExt   = "toml"
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "certmgr",
+	Use:   binaryName,
 	Short: "A brief description of your application",
 	Long: `A longer description that spans multiple lines and likely contains
 examples and usage of using your application. For example:
@@ -37,32 +49,71 @@ func Execute() {
 	}
 }
 
+type Env struct {
+	flags *pflag.FlagSet
+	v     *viper.Viper
+}
+
+func (e Env) Register(name, shorthand string, value interface{}, usage string) {
+
+	switch val := value.(type) {
+	case bool:
+		if shorthand == "" {
+			e.flags.Bool(name, val, usage)
+		} else {
+			e.flags.BoolP(name, shorthand, val, usage)
+		}
+	case string:
+		if shorthand == "" {
+			e.flags.String(name, val, usage)
+		} else {
+			e.flags.StringP(name, shorthand, val, usage)
+		}
+	case uint:
+		e.flags.UintP(name, shorthand, val, usage)
+	case uint16:
+		e.flags.Uint16P(name, shorthand, val, usage)
+	}
+	e.v.SetDefault(name, value)
+	e.v.BindPFlag(name, e.flags.Lookup(name))
+}
+
+func NewEnv(f *pflag.FlagSet) Env {
+	e := Env{}
+	e.flags = f
+	e.v = viper.New()
+	e.v.SetTypeByDefaultValue(true)
+	e.v.SetEnvPrefix(binaryName)
+	e.v.AutomaticEnv()
+	return e
+}
+
+func (e Env) Unmarshal(v interface{}, funcs ...interface{}) error {
+	if len(funcs) == 0 {
+		return e.v.Unmarshal(v)
+	}
+
+	fcs := []mapstructure.DecodeHookFunc{}
+	for _, f := range funcs {
+		fcs = append(fcs, f.(mapstructure.DecodeHookFunc))
+	}
+
+	return e.v.Unmarshal(v, viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(fcs...)))
+}
+
+var sf certmgr.SettingsFlags
+var ef Env
+
 func init() {
+	if runtime.GOOS == "windows" {
+		defaultVarDir = filepath.Join(defaultVarDir, "certs")
+	}
 	cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file")
 
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file  (default is $HOME/.certmgr.yaml)")
-
-	rootCmd.PersistentFlags().String("id", "", "UUID for server")
-	viper.BindPFlag("id", rootCmd.PersistentFlags().Lookup("id"))
-
-	rootCmd.PersistentFlags().StringP("certhome", "d", "", "Cert home")
-	viper.BindPFlag("certhome", rootCmd.PersistentFlags().Lookup("certhome"))
-
-	rootCmd.PersistentFlags().StringP("apikey", "k", "", "API Key")
-	viper.BindPFlag("apikey", rootCmd.PersistentFlags().Lookup("apikey"))
-
-	rootCmd.PersistentFlags().UintP("port", "p", 0, "Server Port")
-	viper.BindPFlag("serverport", rootCmd.PersistentFlags().Lookup("port"))
-
-	rootCmd.PersistentFlags().String("cert", "", "Server Cert")
-	viper.BindPFlag("servercert", rootCmd.PersistentFlags().Lookup("cert"))
-
-	rootCmd.PersistentFlags().String("certkey", "", "Server Key")
-	viper.BindPFlag("serverkey", rootCmd.PersistentFlags().Lookup("certkey"))
+	ef = NewEnv(rootCmd.PersistentFlags())
+	sf = certmgr.NewSettingsFlags(ef, defaultVarDir)
 
 }
 
@@ -70,26 +121,19 @@ func init() {
 func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
+		ef.v.SetConfigFile(cfgFile)
 	} else {
+		ef.v.SetConfigName(binaryName)
+
 		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+		ef.v.AddConfigPath(defaultConfigDir)
+		for _, p := range xdg.ConfigDirs {
+			ef.v.AddConfigPath(p)
 		}
-
-		// Search config in home directory with name ".flaf" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".certmgr")
 	}
 
-	viper.SetEnvPrefix("certmgr")
-	viper.AutomaticEnv() // read in environment variables that match
-
-	fmt.Println(viper.ConfigFileUsed())
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	if err := ef.v.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", ef.v.ConfigFileUsed())
 	}
+
 }

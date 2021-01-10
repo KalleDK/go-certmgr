@@ -37,15 +37,19 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var settings certmgr.Settings
-		if err := loadSettings(&settings); err != nil {
+		if err := sf.Unmarshal(&settings); err != nil {
 			log.Fatal(err)
 		}
 		fmt.Printf("CertHome: %s\n", settings.CertHome)
-		fmt.Printf("Port: %d\n", settings.ServerPort)
+		fmt.Printf("Port: %d\n", settings.Port)
 
 		ch := certapi.CertHome{
 			Path: settings.CertHome,
-			Key:  settings.ApiKey,
+			Key:  settings.APIKey,
+		}
+
+		if !settings.Debug {
+			gin.SetMode(gin.ReleaseMode)
 		}
 
 		r := gin.Default()
@@ -146,10 +150,10 @@ to quickly create a Cobra application.`,
 			})
 		}
 
-		if settings.ServerCert == "" {
-			r.Run(fmt.Sprintf(":%d", settings.ServerPort))
+		if settings.SSL.Cert == "" {
+			r.Run(fmt.Sprintf(":%d", settings.Port))
 		} else {
-			r.RunTLS(fmt.Sprintf(":%d", settings.ServerPort), settings.ServerCert, settings.ServerKey)
+			r.RunTLS(fmt.Sprintf(":%d", settings.Port), settings.SSL.Cert, settings.SSL.Key)
 		}
 	},
 }
