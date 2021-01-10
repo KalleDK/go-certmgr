@@ -1,0 +1,21 @@
+# action.yml
+name: 'Alpine Build APK'
+author: 'Kalle M. Aagaard <alpine@k-moeller.dk>'
+description: 'Build alpine apk'
+inputs:
+  abuild_key:
+    description: 'RSA Key to sign the package'
+    required: true
+  abuild_key_pub:
+    description: 'Public RSA Key to verify the package'
+    required: true
+  abuild_key_name:
+    description: 'Name of RSA Key to sign the package'
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+
+branding:
+  icon: 'package'  
+  color: 'blue'

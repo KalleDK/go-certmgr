@@ -1,0 +1,26 @@
+on:
+  push:
+    tags:
+    - 'v*'
+
+name: Make apk
+
+jobs:   
+  create_release:
+    name: Create Relase
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v2
+    - name: Build
+      uses: ./.github/actions/alpine
+      with:
+        abuild_key: ${{ secrets.ABUILD_KEY }}
+        abuild_key_pub: ${{ secrets.ABUILD_KEY_PUB }}
+        abuild_key_name: alpine@k-moeller.dk-5ff315f1
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: certmgr
+        path: ${{ github.workspace }}/packages
+          
