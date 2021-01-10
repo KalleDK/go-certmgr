@@ -1,7 +1,7 @@
 # Contributor: Kalle M. Aagaard <alpine@k-moeller.dk>
 # Maintainer: Kalle M. Aagaard <alpine@k-moeller.dk>
 pkgname=certmgr
-pkgver=0.0.9
+pkgver=0.0.10
 pkgrel=1
 pkgdesc="A small certmgr service"
 url="https://github.com/KalleDK/go-${pkgname}/"
@@ -26,4 +26,5 @@ package() {
     install -Dm750 -d "${pkgdir}/var/lib/${pkgname}"
     install -Dm750 -d "${pkgdir}/var/lib/${pkgname}/certs"
     install -Dm755 "openrc/${pkgname}" "${pkgdir}/etc/init.d/${pkgname}"
+    install -Dm644 "openrc/conf" "${pkgdir}/etc/conf.d/${pkgname}"
 }

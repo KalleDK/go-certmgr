@@ -2,7 +2,8 @@
 
 name="$SVCNAME"
 supervisor="supervise-daemon"
-command="/usr/local/bin/$SVCNAME"
+command="/usr/bin/$SVCNAME"
+command_args="${CERTMGR_OPTS} serve"
 
 
 depend() {
