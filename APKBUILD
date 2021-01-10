@@ -24,4 +24,5 @@ package() {
     install -Dm755 "bin/${pkgname}" "${pkgdir}/usr/bin/${pkgname}"
     install -Dm750 -d "${pkgdir}/var/lib/${pkgname}"
     install -Dm750 -d "${pkgdir}/var/lib/${pkgname}/certs"
+    install -Dm755 "openrc/${pkgname}" "${pkgdir}/etc/init.d/${pkgname}"
 }
