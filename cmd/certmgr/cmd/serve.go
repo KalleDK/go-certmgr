@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	defaultBaseDir  = "../../data"
-	defaultAuthFile = "../../data/auth.json"
+	defaultBaseDir  = "./data"
+	defaultAuthFile = "./data/auth.json"
 	defaultPort     = 8000
 	defaultUUID     = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 )
@@ -40,13 +40,14 @@ var serveCmd = &cobra.Command{
 	Short: "",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		key := viper.GetString("serve.ssl.key")
+		fmt.Println(key)
+		cert := viper.GetString("serve.ssl.cert")
+
 		uid := uuid.MustParse(viper.GetString("serve.uuid"))
 		auth := acmeserver.SimpleAuthFromJson(viper.GetString("serve.auth"))
 		subfs := os.DirFS(viper.GetString("serve.basedir"))
 		handler := acmeserver.NewHandler(subfs, auth, uid)
-
-		key := viper.GetString("serve.ssl.key")
-		cert := viper.GetString("serve.ssl.cert")
 
 		addr := fmt.Sprintf(":%d", viper.GetUint32("serve.port"))
 
