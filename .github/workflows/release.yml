@@ -91,7 +91,7 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
         CGO_ENABLED: 0
       with:
-        args: go build -o main ./certmgr
+        args: go build -o main ./cmd/certmgr
     - name: Pack artifacts
       id: pack
       run: |

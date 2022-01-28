@@ -79,9 +79,10 @@ func (e Env) Register(name, shorthand string, value interface{}, usage string) {
 }
 
 func NewEnv(f *pflag.FlagSet) Env {
-	e := Env{}
-	e.flags = f
-	e.v = viper.New()
+	e := Env{
+		flags: f,
+		v:     viper.New(),
+	}
 	e.v.SetTypeByDefaultValue(true)
 	e.v.SetEnvPrefix(binaryName)
 	e.v.AutomaticEnv()
