@@ -41,7 +41,6 @@ var serveCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		key := viper.GetString("serve.ssl.key")
-		fmt.Println(key)
 		cert := viper.GetString("serve.ssl.cert")
 
 		uid := uuid.MustParse(viper.GetString("serve.uuid"))
