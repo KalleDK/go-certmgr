@@ -1,7 +1,7 @@
 # Contributor: Kalle M. Aagaard <alpine@k-moeller.dk>
 # Maintainer: Kalle M. Aagaard <alpine@k-moeller.dk>
 pkgname=certmgr
-pkgver=0.0.14
+pkgver=0.0.0
 pkgrel=1
 pkgdesc="A small certmgr service"
 url="https://github.com/KalleDK/go-${pkgname}/"

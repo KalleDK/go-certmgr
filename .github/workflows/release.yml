@@ -35,6 +35,7 @@ jobs:
         abuild_key: ${{ secrets.ABUILD_KEY }}
         abuild_key_pub: ${{ secrets.ABUILD_KEY_PUB }}
         abuild_key_name: alpine@k-moeller.dk-5ff315f1
+        abuild_pkg_ver: ${{ github.ref }}
     - name: Find APK
       id: pack
       run: |
