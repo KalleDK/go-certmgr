@@ -12,6 +12,9 @@ inputs:
   abuild_key_name:
     description: 'Name of RSA Key to sign the package'
     required: true
+  abuild_pkg_ver:
+    desciption: 'Name of version v0.0.1'
+    required: true
 runs:
   using: 'docker'
   image: 'Dockerfile'
