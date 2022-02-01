@@ -12,7 +12,7 @@ type SimpleAuth struct {
 	Domains map[certapi.APIKey]string
 }
 
-func (s SimpleAuth) HasAccess(domain string, t certapi.CertType, key certapi.APIKey) bool {
+func (s SimpleAuth) HasAccess(domain string, itemtype string, key certapi.APIKey) bool {
 	apidomain, ok := s.Domains[key]
 	return ok && (domain == apidomain)
 }

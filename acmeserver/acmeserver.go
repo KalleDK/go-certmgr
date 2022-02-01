@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -20,7 +21,7 @@ import (
 )
 
 type AuthDB interface {
-	HasAccess(domain string, t certapi.CertType, key certapi.APIKey) bool
+	HasAccess(domain string, itemtype string, key certapi.APIKey) bool
 }
 
 func parseIniTime(section *ini.Section, name string) (t time.Time, err error) {
@@ -84,8 +85,10 @@ type AcmeBackend struct {
 	auth AuthDB
 }
 
-func (b *AcmeBackend) realname(domain string, ctype certapi.CertType) (string, error) {
-	switch ctype {
+func (b *AcmeBackend) realname(domain string, itemtype string) (string, error) {
+	switch itemtype {
+	case certapi.Info:
+		return fmt.Sprintf("%s.conf", domain), nil
 	case certapi.Cert:
 		return fmt.Sprintf("%s.cer", domain), nil
 	case certapi.CertChain:
@@ -97,8 +100,32 @@ func (b *AcmeBackend) realname(domain string, ctype certapi.CertType) (string, e
 	return "", errors.New("file not found")
 }
 
-func (b *AcmeBackend) GetCertInfo(domain string, key certapi.APIKey) (certinfo certapi.CertInfo, err error) {
-	if !b.auth.HasAccess(domain, certapi.Key, key) {
+func (b *AcmeBackend) GetSerial(domain string, key certapi.APIKey) (serial string, err error) {
+	sub, err := fs.Sub(b.fs, domain)
+	if err != nil {
+		return
+	}
+
+	name, err := b.realname(domain, certapi.Info)
+	if err != nil {
+		return
+	}
+
+	data, err := fs.ReadFile(sub, name)
+	if err != nil {
+		return
+	}
+
+	info, err := fromIni(data)
+	if err != nil {
+		return
+	}
+
+	return info.Serial, nil
+}
+
+func (b *AcmeBackend) GetItemInfo(domain string, itemtype string, key certapi.APIKey) (certinfo certapi.ItemInfo, err error) {
+	if !b.auth.HasAccess(domain, itemtype, key) {
 		err = errors.New("invalid API key")
 		return
 	}
@@ -108,21 +135,65 @@ func (b *AcmeBackend) GetCertInfo(domain string, key certapi.APIKey) (certinfo c
 		return
 	}
 
-	data, err := fs.ReadFile(sub, fmt.Sprintf("%s.conf", domain))
+	name, err := b.realname(domain, itemtype)
 	if err != nil {
 		return
 	}
 
-	return fromIni(data)
+	stat, err := fs.Stat(sub, name)
+	if err != nil {
+		return
+	}
+
+	certinfo.ModTime = stat.ModTime()
+	certinfo.Size = stat.Size()
+
+	return certinfo, nil
 }
 
-func (b *AcmeBackend) getPEM(domain string, t certapi.CertType) (cert certserver.CertFile, err error) {
+func (b *AcmeBackend) getInfo(domain string) (cert certapi.Item, err error) {
 	sub, err := fs.Sub(b.fs, domain)
 	if err != nil {
 		return
 	}
 
-	name, err := b.realname(domain, t)
+	name, err := b.realname(domain, certapi.Info)
+	if err != nil {
+		return
+	}
+
+	stat, err := fs.Stat(sub, name)
+	if err != nil {
+		return
+	}
+	cert.ModTime = stat.ModTime()
+	cert.Size = stat.Size()
+
+	data, err := fs.ReadFile(sub, name)
+	if err != nil {
+		return
+	}
+
+	info, err := fromIni(data)
+	if err != nil {
+		return
+	}
+
+	cert.Data, err = json.Marshal(info)
+	if err != nil {
+		return
+	}
+
+	return cert, nil
+}
+
+func (b *AcmeBackend) getPEM(domain string, itemtype string) (cert certapi.Item, err error) {
+	sub, err := fs.Sub(b.fs, domain)
+	if err != nil {
+		return
+	}
+
+	name, err := b.realname(domain, itemtype)
 	if err != nil {
 		return
 	}
@@ -142,7 +213,7 @@ func (b *AcmeBackend) getPEM(domain string, t certapi.CertType) (cert certserver
 	return cert, nil
 }
 
-func (b *AcmeBackend) getPFX(domain string) (cert certserver.CertFile, err error) {
+func (b *AcmeBackend) getPFX(domain string) (cert certapi.Item, err error) {
 	sub, err := fs.Sub(b.fs, domain)
 	if err != nil {
 		return
@@ -206,10 +277,9 @@ func (b *AcmeBackend) getPFX(domain string) (cert certserver.CertFile, err error
 	}
 
 	return cert, nil
-
 }
 
-func (b *AcmeBackend) getPFXChain(domain string) (cert certserver.CertFile, err error) {
+func (b *AcmeBackend) getPFXChain(domain string) (cert certapi.Item, err error) {
 	sub, err := fs.Sub(b.fs, domain)
 	if err != nil {
 		return
@@ -293,24 +363,24 @@ func (b *AcmeBackend) getPFXChain(domain string) (cert certserver.CertFile, err 
 	}
 
 	return cert, nil
-
 }
 
-func (b *AcmeBackend) GetCertFile(domain string, t certapi.CertType, key certapi.APIKey) (cert certserver.CertFile, err error) {
-	if !b.auth.HasAccess(domain, t, key) {
+func (b *AcmeBackend) GetItem(domain string, itemtype string, key certapi.APIKey) (cert certapi.Item, err error) {
+	if !b.auth.HasAccess(domain, itemtype, key) {
 		err = errors.New("invalid API key")
 		return
 	}
 
-	switch t {
+	switch itemtype {
+	case certapi.Info:
+		return b.getInfo(domain)
 	case certapi.PKCS12:
 		return b.getPFX(domain)
 	case certapi.PKCS12Chain:
 		return b.getPFXChain(domain)
 	default:
-		return b.getPEM(domain, t)
+		return b.getPEM(domain, itemtype)
 	}
-
 }
 
 func NewHandler(subfs fs.FS, auth AuthDB, uid uuid.UUID) http.Handler {

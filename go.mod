@@ -3,7 +3,7 @@ module github.com/KalleDK/go-certmgr
 go 1.15
 
 require (
-	github.com/KalleDK/go-certapi v0.0.20
+	github.com/KalleDK/go-certapi v0.0.24
 	github.com/google/uuid v1.3.0
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/pflag v1.0.5
